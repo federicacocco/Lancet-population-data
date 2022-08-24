@@ -1,0 +1,34 @@
+popdata %>%
+  # Only all age values
+  filter(age_group_id == "All Ages") %>%
+  # calculate total population of each year and country
+  group_by(
+    location_name, year_id
+  ) %>%
+  summarise(
+    population = sum(val)
+  ) %>%
+  # calculate the change in population each year, for each country
+  ungroup() %>%
+  group_by(location_name) %>%
+  arrange(year_id) %>%
+  mutate(
+    abs_change = population - lag(population)
+    percent_change = abs_change / lag(population)
+  ) %>%
+  ungroup()
+  
+  popdata %>%
+  # calculate total population of each year and country
+  group_by(
+    location_name, year_id
+  ) %>%
+  summarise(
+    all_population = sum(if_else(age_group_name == "All Ages", val, 0)),
+    old_population = sum(if_else(age_group_id %in% c(18,19,20,30,31,32,235), val, 0))
+  ) %>%
+  # calculate the change in population each year, for each country
+  ungroup() %>%
+  mutate(
+    share_old_population = 100 * old_population / all_population
+  )

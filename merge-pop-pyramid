@@ -1,0 +1,52 @@
+library(readr)
+library(dplyr)
+library(tidyr)
+
+lancet_1 <- read_csv("~/Downloads/Lancet Pop1950-2017.CSV")
+lancet_2 <- read_csv("~/Downloads/Lancet projections 2018-2100.CSV")
+
+req_cols <- c("location_name", 
+              "sex", 
+              "age_group_name", 
+              "year_id", 
+              "val")
+
+locations <- c("East Asia", "Western Europe")
+
+lmp_zero_to_four <- c("Early Neonatal", "Late Neonatal", "Post Neonatal", "1 to 4")
+
+lancet_combined <- bind_rows(
+  lancet_1 %>% select(all_of(req_cols)),
+  lancet_2 %>% select(all_of(req_cols))
+) %>%
+  filter(
+    location_name %in% locations,
+    age_group_name != "All Ages"
+  ) %>%
+  mutate(
+    age_group_name = if_else(
+      age_group_name %in% lmp_zero_to_four,
+      "0 to 4",
+      age_group_name)
+  ) %>%
+  group_by(
+    location_name, age_group_name, sex, year_id
+  ) %>%
+  summarise(
+    val = sum(val)
+  )
+
+lancet_wide <- lancet_combined %>%
+  pivot_wider(names_from = year_id,
+              values_from = val) %>%
+  arrange(location_name, age_group_name, sex)
+
+write_csv(
+  lancet_wide %>% filter(location_name == "East Asia"),
+  "~/Downloads/lancet_east_asia.csv"
+)
+
+write_csv(
+  lancet_wide %>% filter(location_name == "Western Europe"),
+  "~/Downloads/lancet_western_europe.csv"
+)
